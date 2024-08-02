@@ -24,7 +24,7 @@ from equipment_cyg.utils.database.operations import get_all_event, get_all_equip
 
 class Controller(GemEquipmentHandler):
     def __init__(self, **kwargs):
-        self.config = self.get_config(f'{"/".join(self.__module__.split("."))}.conf')  # 获取产品配置信息
+        self.config = self.get_config(self.get_config_path(f'{"/".join(self.__module__.split("."))}.conf'))
         self._file_handler = None  # 保存日志的处理器
 
         hsms_settings = HsmsSettings(
@@ -76,8 +76,9 @@ class Controller(GemEquipmentHandler):
             ec_list = get_all_equipment_constant()
             for ec_id, name, min_value, max_value, default_value, value_type, unit, callback in ec_list:
                 self.equipment_constants.update({
-                    ec_id: EquipmentConstant(ec_id, name, min_value, max_value, default_value, unit, value_type,
-                                             callback)
+                    ec_id: EquipmentConstant(
+                        ec_id, name, min_value, max_value, default_value, unit, value_type, callback
+                    )
                 })
         else:
             pass
@@ -117,7 +118,7 @@ class Controller(GemEquipmentHandler):
             for alarm_id, alarm_name, alarm_text, alarm_code, ce_on, ce_off in alarms:
                 self.alarms.update({alarm_id: Alarm(alarm_id, alarm_name, alarm_text, alarm_code, ce_on, ce_off)})
         else:
-            if alarm_path := self.config.get("alarm_csv"):
+            if alarm_path := self.get_config_path(self.config.get("alarm_csv")):
                 with pathlib.Path(alarm_path).open("r", encoding="utf-8") as file:
                     csv_reader = csv.reader(file)
                     next(csv_reader)
@@ -187,6 +188,7 @@ class Controller(GemEquipmentHandler):
         Args:
             event_name (str): 事件名称.
         """
+
         def _ce_sender():
             reports = []
             event = self.collection_events.get(event_name)
@@ -238,6 +240,11 @@ class Controller(GemEquipmentHandler):
         return function.get()
 
     # 静态通用函数
+    @staticmethod
+    def get_config_path(relative_path) -> str:
+        """获取配置文件绝对路径地址."""
+        return f'{os.path.dirname(__file__)}/../../{relative_path}'
+
     @staticmethod
     def get_config(path) -> dict:
         """获取配置文件内容."""
