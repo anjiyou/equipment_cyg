@@ -28,9 +28,9 @@ class Controller(GemEquipmentHandler):
         self._file_handler = None  # 保存日志的处理器
 
         hsms_settings = HsmsSettings(
-            address=self.get_value_from_config("secs_ip"),
-            port=self.get_value_from_config("secs_port"),
-            connect_mode=getattr(HsmsConnectMode, self.get_value_from_config("connect_mode")),
+            address=self.get_value_from_config("secs_ip", "127.0.0.1"),
+            port=self.get_value_from_config("secs_port", 5000),
+            connect_mode=getattr(HsmsConnectMode, self.get_value_from_config("connect_mode", "PASSIVE")),
             device_type=DeviceType.EQUIPMENT
         )
         super().__init__(settings=hsms_settings, **kwargs)
@@ -118,7 +118,7 @@ class Controller(GemEquipmentHandler):
             for alarm_id, alarm_name, alarm_text, alarm_code, ce_on, ce_off in alarms:
                 self.alarms.update({alarm_id: Alarm(alarm_id, alarm_name, alarm_text, alarm_code, ce_on, ce_off)})
         else:
-            if alarm_path := self.get_config_path(self.config.get("alarm_csv")):
+            if alarm_path := self.get_config_path(self.config.get("alarm_csv", None)):
                 with pathlib.Path(alarm_path).open("r", encoding="utf-8") as file:
                     csv_reader = csv.reader(file)
                     next(csv_reader)
@@ -216,16 +216,17 @@ class Controller(GemEquipmentHandler):
         self.enable()  # 设备和host通讯
         self.logger.info(f"*** CYG SECSGEM 服务已启动 *** -> 等待工厂 EAP 连接!")
 
-    def get_value_from_config(self, key) -> Union[str, int, dict, None]:
+    def get_value_from_config(self, key, default=None) -> Union[str, int, dict, None]:
         """根据key获取配置文件里的值.
 
         Args:
             key(str): 获取值对应的key.
+            default: 找不到值时的默认值.
 
         Returns:
             Union[str, int, dict]: 从配置文件中获取的值.
         """
-        return self.config.get(key, None)
+        return self.config.get(key, default)
 
     def get_receive_data(self, message: Message) -> Union[dict, str]:
         """解析Host发来的数据并返回.
@@ -243,7 +244,8 @@ class Controller(GemEquipmentHandler):
     @staticmethod
     def get_config_path(relative_path) -> str:
         """获取配置文件绝对路径地址."""
-        return f'{os.path.dirname(__file__)}/../../{relative_path}'
+        if relative_path:
+            return f'{os.path.dirname(__file__)}/../../{relative_path}'
 
     @staticmethod
     def get_config(path) -> dict:
