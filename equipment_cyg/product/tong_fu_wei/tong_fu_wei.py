@@ -14,7 +14,7 @@ from equipment_cyg.utils.cyg_socket.cyg_socket_server_asyncio import CygSocketSe
 
 """
 EAP->PC: 建立通讯 s1f13
-    
+
 PC->EAP: 控制状态, 0 = Offline, 1 = Online Local, 2 = Online Remote
     ControlState,1,2,0,0,0,0,0
     ControlState,2,2,0,0,0,0,0
@@ -28,16 +28,16 @@ PC->EAP: 上传配方  s7f3
     PPInquireRp,1,S6-11343A,key1&key2&key3&value1&value2&value3,0,0,0,0,0,0
     1.每个设备上传配方时我会判断, 当前配方是否每个设备都上传了, 如果都上传了, 再上传配方给EAP
     2.上传配方后, 假如一台设备又发了这个配方名, 那我还会上传这个配方给EAP
-    
+
 PC->EAP: 下载配方  s7f5
     1.下位机发出 DownloadRecipeInquire,machine_id,recipe_id,0,0,0,0,0
     2.我接收后通过 s7f5 向EAP发出请求
     3.EAP 通过 s7f6 回复配方信息
     {"station_1":{"KeyNames":["key1"],"KeyValues":["value1"]},"station_2":{"KeyNames":["key1"],"KeyValues":["value1"]}}
     4.我收到后分别发给2个设备
-    
+
 EAP->PC: EAP请求配方信息  s7f5
-    
+
 EAP->PC: EAP下发配方前询问
     +-------+------------------------+
     | Value | Description            |
@@ -57,15 +57,15 @@ EAP->PC: EAP下发配方前询问
         2.如果self.recipes里没有这个配方, 再给两个设备发,PPLoadInquire,0,0,0,0,0,0,0, 询问下位机是否可以下发
             1.两个设备都回复 PPReply,1,OK,0,0,0,0,0 才能回复S7F2 ack=0
             2.否则才能回复S7F2, ack=4 设备正在运行
-    
+
 EAP->PC: Host给PC下发配方  s7f3
     1.host通过s7f3发送数据
     {"station_1":{"KeyNames":["key1"],"KeyValues":["value1"]},"station_2":{"KeyNames":["key1"],"KeyValues":["value1"]}}
     2.将配方保存在self.recipes
-    
+
 EAP->PC: EAP查看设备里的所有配方
     host通过 s7f19 发送请求
-    
+
 EAP->PC: 删除配方
     +-------+------------------------+
     | Value | Description            |
@@ -75,7 +75,7 @@ EAP->PC: 删除配方
     | 4     | PPID not found         |
     +-------+------------------------+
     host通过 s7f17 发送请求
-    
+
 EAP->PC: EAP查看设备里的当前配方
     host通过 s1f3 发送请求
 
@@ -94,7 +94,7 @@ PC->EAP: PC回复EAP配方切换成功, 发送配方切换成功事件
 PC->EAP: 点击启动按钮向EAP请求启动, 只要EAP没发 STARTWORKORDER 远程命令, 每次点击都会发3000请求启动事件
     1.等待PC给我发 StartWorkInquire,S6-11343A,0,0,0,0,0,0
     2.给EAP通过S6F11发StartWorkInquire事件
-    
+
 EAP->PC: 可以开始工作 s2f41 
     1.EAP通过S2F41发送 STARTWORKORDER 不带参数, 发送
     2.我收到后立马回复S2F42 ACK=4
@@ -122,7 +122,7 @@ PC->EAP: 产品出站
     3.EAP通过S2F41发送 TrackOutReply  track_out_state=OK 给设备2
     4.EAP通过S2F41发送 TrackOutReply  track_out_state=NG, mix_sn=12DU1C12,1DU1C13,3DU1C12,29DU1C11,23DU1C14 给设备2
     5.设备2会弹框，操作员将混料SN拿出来
-    
+
 PC->EAP: 复位出站, 发送 ResetNG,frame_sn,0,0,0,0
     1.我通过S6F11发ResetNG事件
     2.EAP通过S2F41发送  ResetNGReply  reset_ng_state=OK 给设备2
@@ -360,6 +360,7 @@ class TongFuWei(Controller):
 
     def set_clear_alarm(self, str_data_list):
         """通过S5F1发送报警和解除报警."""
+
         def _alarm_sender():
             monitor_event = str_data_list[0]
             machine_id, alarm_id, alarm_text, *_ = str_data_list[1::]
@@ -373,6 +374,7 @@ class TongFuWei(Controller):
             self.send_and_waitfor_response(
                 self.stream_function(5, 1)({"ALCD": alarm_code, "ALID": alarm_id, "ALTX": alarm_text})
             )
+
         threading.Thread(target=_alarm_sender, daemon=True).start()
 
     def track_in(self, str_data):
